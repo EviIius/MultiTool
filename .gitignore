@@ -1,0 +1,13 @@
+# Python venvs
+topic_cluster_app/venv/
+
+# Node modules & build output
+frontend/node_modules/
+frontend/build/
+
+# VSCode
+.vscode/
+
+# OS artifacts
+Thumbs.db
+.DS_Store
