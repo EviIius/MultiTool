@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Multi-Method Text Analytics</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    label, select, input, button { display: block; margin-top: .5rem; }
+    pre { background: #f4f4f4; padding: 1rem; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Upload & Analyze</h1>
+  <form id="upload-form">
+    <label for="method-select">Choose method:</label>
+    <select id="method-select">
+      <option value="kmeans">KMeans Clustering</option>
+      <option value="lda">LDA Topic Modeling</option>
+      <option value="hierarchy">Hierarchical Clustering</option>
+      <option value="dbscan">DBSCAN</option>
+      <option value="hdbscan">HDBSCAN</option>
+      <option value="anomaly">Anomaly Detection</option>
+      <option value="pca">PCA Reduction</option>
+      <option value="tsne">t-SNE Reduction</option>
+      <option value="umap">UMAP Reduction</option>
+      <option value="embed_cluster">Embedding Clustering</option>
+      <option value="summarize">Summarization</option>
+      <option value="sentiment">Sentiment Analysis</option>
+      <option value="ner">Named-Entity Recognition</option>
+    </select>
+
+    <label for="file-input">Select file (.txt or CSV w/ “text” column):</label>
+    <input type="file" id="file-input" name="file" />
+
+    <div id="params"></div>
+
+    <button type="submit">Run</button>
+  </form>
+
+  <h2>Result</h2>
+  <pre id="output"></pre>
+
+  <script>
+    // Define which fields each endpoint needs
+    const methods = {
+      kmeans:        [{ label: "Number of clusters",  name: "n_clusters",       type: "number", value: 5 }],
+      lda:           [{ label: "Number of topics",     name: "n_topics",         type: "number", value: 5 }],
+      hierarchy:     [{ label: "Number of clusters",   name: "n_clusters",       type: "number", value: 5 }],
+      dbscan:        [
+                       { label: "Epsilon",          name: "eps",               type: "number", step:"0.1", value:0.5 },
+                       { label: "Min samples",     name: "min_samples",       type: "number",          value:5 }
+                     ],
+      hdbscan:       [{ label: "Min cluster size",    name: "min_cluster_size", type: "number", value:5 }],
+      anomaly:       [],
+      pca:           [{ label: "Components",           name: "n_components",     type: "number", value:2 }],
+      tsne:          [
+                       { label: "Components",       name: "n_components",     type: "number", value:2 },
+                       { label: "Perplexity",       name: "perplexity",       type: "number", step:"1", value:30 }
+                     ],
+      umap:          [{ label: "Components",           name: "n_components",     type: "number", value:2 }],
+      embed_cluster: [{ label: "Number of clusters",   name: "n_clusters",       type: "number", value:5 }],
+      summarize:     [{ label: "Max length",           name: "max_length",       type: "number", value:50 }],
+      sentiment:     [],
+      ner:           []
+    };
+
+    const methodSelect = document.getElementById("method-select");
+    const paramsDiv    = document.getElementById("params");
+    const form         = document.getElementById("upload-form");
+    const output       = document.getElementById("output");
+
+    // Render form fields whenever method changes
+    function updateParams() {
+      paramsDiv.innerHTML = "";
+      const def = methods[methodSelect.value];
+      def.forEach(p => {
+        const lbl = document.createElement("label");
+        lbl.textContent = p.label + ":";
+        const inp = document.createElement("input");
+        inp.name  = p.name;
+        inp.type  = p.type;
+        if (p.step) inp.step = p.step;
+        inp.value = p.value;
+        paramsDiv.appendChild(lbl);
+        paramsDiv.appendChild(inp);
+      });
+    }
+    methodSelect.addEventListener("change", updateParams);
+    updateParams();
+
+    // Handle submit
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      output.textContent = "Processing…";
+
+      // Build form data
+      const fd = new FormData();
+      const fileInput = document.getElementById("file-input");
+      if (!fileInput.files[0]) {
+        output.textContent = "❌ Please select a file first.";
+        return;
+      }
+      fd.append("file", fileInput.files[0]);
+      methods[methodSelect.value].forEach(p => {
+        const val = form.elements[p.name].value;
+        fd.append(p.name, val);
+      });
+
+      // Fire the right endpoint
+      try {
+        const res  = await fetch(`/${methodSelect.value}/`, {
+          method: "POST",
+          body: fd
+        });
+        const data = await res.json();
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        output.textContent = "Error: " + err;
+      }
+    });
+  </script>
+</body>
+</html>
