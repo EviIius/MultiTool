@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+python-multipart       # for file uploads
+pandas
+scikit-learn
+numpy
